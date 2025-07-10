@@ -31,9 +31,9 @@ public class UserController {
 
     @PostMapping("/login")
     @Operation(summary = "User login")
-    public ResponseEntity<String> loginUser(@Valid @RequestBody UserLoginDTO loginDTO) {
-        String token = userService.login(loginDTO);
-        return ResponseEntity.ok(token);
+    public ResponseEntity<JwtResponseDTO> loginUser(@Valid @RequestBody UserLoginDTO loginDTO) {
+        JwtResponseDTO response = userService.login(loginDTO);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/profile")

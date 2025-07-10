@@ -1,12 +1,13 @@
 # Book Review API
 
-A comprehensive RESTful API for managing books, authors, reviews, and ratings built with Spring Boot, PostgreSQL, and Spring Security.
+A comprehensive RESTful API for managing books, authors, reviews, and ratings built with Spring Boot, PostgreSQL, JWT authentication, and Spring Security.
 
 ## 📋 Table of Contents
 
 - [Features](#features)
 - [Technology Stack](#technology-stack)
 - [Database Schema](#database-schema)
+- [Live Demo](#live-demo)
 - [Getting Started](#getting-started)
 - [API Documentation](#api-documentation)
 - [User Roles & Authentication](#user-roles--authentication)
@@ -16,7 +17,7 @@ A comprehensive RESTful API for managing books, authors, reviews, and ratings bu
 
 ## ✨ Features
 
-- **User Management**: Registration, authentication, and role-based access control
+- **User Management**: Registration, authentication with JWT tokens, and role-based access control
 - **Book Management**: CRUD operations for books with author and genre associations
 - **Review System**: Users can write and manage reviews for books
 - **Rating System**: Star-based rating system for books
@@ -24,13 +25,14 @@ A comprehensive RESTful API for managing books, authors, reviews, and ratings bu
 - **Genre Classification**: Organize books by genres
 - **RESTful API**: Well-structured REST endpoints with proper HTTP status codes
 - **API Documentation**: Interactive Swagger UI documentation
-- **Security**: Spring Security with role-based authentication
+- **JWT Security**: Stateless authentication with JSON Web Tokens
 - **Database Integration**: PostgreSQL with JPA/Hibernate
 
 ## 🛠 Technology Stack
 
 - **Backend**: Spring Boot 3.x
 - **Database**: PostgreSQL
+- **Authentication**: JWT (JSON Web Tokens)
 - **ORM**: Spring Data JPA / Hibernate
 - **Security**: Spring Security
 - **Documentation**: SpringDoc OpenAPI (Swagger)
@@ -41,7 +43,7 @@ A comprehensive RESTful API for managing books, authors, reviews, and ratings bu
 ## 🗄 Database Schema
 
 View the complete Entity Relationship Diagram here:
-[📊 ER Diagram](https://drive.google.com/file/d/1mVpoIMgu0DvyDATOGJlqUrcympVxof4J/view?usp=sharing)
+[�� ER Diagram](https://drive.google.com/file/d/1mVpoIMgu0DvyDATOGJlqUrcympVxof4J/view?usp=sharing)
 
 ### Main Entities:
 - **Users**: System users with role-based access
@@ -51,6 +53,13 @@ View the complete Entity Relationship Diagram here:
 - **Reviews**: User reviews for books
 - **Ratings**: Numerical ratings for books
 - **Roles**: User permission levels
+
+## 🌐 Live Demo
+
+The API is deployed and accessible at:
+- **Base URL**: `https://book-review-wpkn.onrender.com`
+- **Swagger UI**: [https://book-review-wpkn.onrender.com/swagger-ui.html](https://book-review-wpkn.onrender.com/swagger-ui.html)
+- **API Docs**: [https://book-review-wpkn.onrender.com/api-docs](https://book-review-wpkn.onrender.com/api-docs)
 
 ## 🚀 Getting Started
 
@@ -70,8 +79,8 @@ View the complete Entity Relationship Diagram here:
    \`\`\`
 
 2. **Database Setup**
-    - Create a PostgreSQL database
-    - Update database credentials in \`src/main/resources/application.properties\`
+   - Create a PostgreSQL database
+   - Update database credentials in \`src/main/resources/application.properties\`
 
    \`\`\`properties
    spring.datasource.url=jdbc:postgresql://localhost:5432/your_database
@@ -89,26 +98,27 @@ View the complete Entity Relationship Diagram here:
    \`\`\`
 
 4. **Access the Application**
-    - API Base URL: \`http://localhost:8080\`
-    - Swagger UI: \`http://localhost:8080/swagger-ui.html\`
-    - API Docs: \`http://localhost:8080/api-docs\`
+   - API Base URL: \`http://localhost:8080\`
+   - Swagger UI: \`http://localhost:8080/swagger-ui.html\`
+   - API Docs: \`http://localhost:8080/api-docs\`
 
 ## 📚 API Documentation
 
 ### Swagger UI
 Interactive API documentation is available at:
-- **Swagger UI**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
-- **OpenAPI JSON**: [http://localhost:8080/api-docs](http://localhost:8080/api-docs)
+- **Production**: [https://book-review-wpkn.onrender.com/swagger-ui.html](https://book-review-wpkn.onrender.com/swagger-ui.html)
+- **Local**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+- **OpenAPI JSON**: [https://book-review-wpkn.onrender.com/api-docs](https://book-review-wpkn.onrender.com/api-docs)
 
 The Swagger interface provides:
 - Complete API endpoint documentation
 - Request/response schemas
 - Interactive testing capabilities
-- Authentication examples
+- JWT authentication examples
 
 ## 🔐 User Roles & Authentication
 
-The application uses Spring Security with Basic Authentication and role-based access control.
+The application uses JWT (JSON Web Tokens) for stateless authentication and role-based access control.
 
 ### Default User Accounts
 
@@ -118,12 +128,31 @@ The application uses Spring Security with Basic Authentication and role-based ac
 | \`author_user\` | \`author123\` | AUTHOR | Manage own books, reviews, ratings |
 | \`regular_user\` | \`user123\` | USER | Read access, create reviews/ratings |
 
-### Authentication
-Use HTTP Basic Authentication with the credentials above:
-\`\`\`bash
-# Example using curl
-curl -u admin_user:admin123 http://localhost:8080/api/users
-\`\`\`
+### JWT Authentication Flow
+
+1. **Login to get JWT token:**
+   \`\`\`bash
+   curl -X POST https://book-review-wpkn.onrender.com/api/users/login \
+   -H "Content-Type: application/json" \
+   -d '{"username": "admin_user", "password": "admin123"}'
+   \`\`\`
+
+2. **Response:**
+   \`\`\`json
+   {
+   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+   "type": "Bearer",
+   "username": "admin_user",
+   "email": "admin@example.com",
+   "role": "ROLE_ADMIN"
+   }
+   \`\`\`
+
+3. **Use token in subsequent requests:**
+   \`\`\`bash
+   curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+   https://book-review-wpkn.onrender.com/api/users
+   \`\`\`
 
 ### Role Permissions
 - **ADMIN**: Complete CRUD access to all resources
@@ -145,6 +174,7 @@ curl -u admin_user:admin123 http://localhost:8080/api/users
    -e SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/your_db \
    -e SPRING_DATASOURCE_USERNAME=your_username \
    -e SPRING_DATASOURCE_PASSWORD=your_password \
+   -e JWT_SECRET=your_jwt_secret_key \
    book-review-api
    \`\`\`
 
@@ -162,6 +192,8 @@ environment:
 - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/bookreview
 - SPRING_DATASOURCE_USERNAME=bookuser
 - SPRING_DATASOURCE_PASSWORD=bookpass
+- JWT_SECRET=mySecretKeyForJWTTokenGenerationThatShouldBeLongEnoughForSecurity
+- JWT_EXPIRATION=86400
 depends_on:
 - db
 
@@ -198,24 +230,66 @@ Run with: \`docker-compose up -d\`
 
 ### Example Requests
 
-**Get all books:**
+**Login and get JWT token:**
 \`\`\`bash
-curl -u regular_user:user123 http://localhost:8080/api/books
+curl -X POST https://book-review-wpkn.onrender.com/api/users/login \
+-H "Content-Type: application/json" \
+-d '{"username": "regular_user", "password": "user123"}'
 \`\`\`
 
-**Create a new review:**
+**Get all books (public endpoint):**
 \`\`\`bash
-curl -X POST -u regular_user:user123 \
+curl https://book-review-wpkn.onrender.com/api/books
+\`\`\`
+
+**Create a new review (requires JWT token):**
+\`\`\`bash
+curl -X POST https://book-review-wpkn.onrender.com/api/reviews \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
 -H "Content-Type: application/json" \
--d '{"bookId": 1, "rating": 5, "comment": "Great book!"}' \
-http://localhost:8080/api/reviews
+-d '{"bookId": 1, "rating": 5, "comment": "Great book!"}'
+\`\`\`
+
+**Get user profile (requires JWT token):**
+\`\`\`bash
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+https://book-review-wpkn.onrender.com/api/users/profile
+\`\`\`
+
+**Register a new user:**
+\`\`\`bash
+curl -X POST https://book-review-wpkn.onrender.com/api/users/register \
+-H "Content-Type: application/json" \
+-d '{
+"username": "newuser",
+"email": "newuser@example.com",
+"password": "password123"
+}'
+\`\`\`
+
+**Get all authors (public endpoint):**
+\`\`\`bash
+curl https://book-review-wpkn.onrender.com/api/authors
+\`\`\`
+
+**Create a new book (requires ADMIN or AUTHOR role):**
+\`\`\`bash
+curl -X POST https://book-review-wpkn.onrender.com/api/books \
+-H "Authorization: Bearer YOUR_JWT_TOKEN" \
+-H "Content-Type: application/json" \
+-d '{
+"title": "New Book",
+"description": "A great new book",
+"authorId": 1,
+"genreId": 1
+}'
 \`\`\`
 
 ## 🏗 Project Structure
 
 \`\`\`
 src/main/java/com/example/book_review/
-├── config/          # Configuration classes
+├── config/          # Configuration classes (Security, JWT, Swagger)
 ├── controllers/     # REST controllers
 ├── dto/            # Data Transfer Objects
 ├── models/         # JPA entities
@@ -237,6 +311,10 @@ spring.datasource.url=jdbc:postgresql://localhost:5432/bookreview
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
 
+# JWT Configuration
+jwt.secret=mySecretKeyForJWTTokenGenerationThatShouldBeLongEnoughForSecurity
+jwt.expiration=86400
+
 # Swagger Configuration
 springdoc.swagger-ui.path=/swagger-ui.html
 springdoc.api-docs.path=/api-docs
@@ -244,6 +322,66 @@ springdoc.api-docs.path=/api-docs
 # Logging
 logging.level.com.example.book_review=DEBUG
 \`\`\`
+
+## 🚀 Deployment
+
+### Render Deployment
+The application is configured for deployment on Render:
+
+1. Connect your GitHub repository to Render
+2. Set environment variables:
+   - \`SPRING_DATASOURCE_URL\`
+   - \`SPRING_DATASOURCE_USERNAME\`
+   - \`SPRING_DATASOURCE_PASSWORD\`
+   - \`JWT_SECRET\`
+   - \`JWT_EXPIRATION\`
+3. Deploy automatically on push to main branch
+
+### Environment Variables
+Required environment variables for production:
+\`\`\`bash
+SPRING_DATASOURCE_URL=jdbc:postgresql://your-db-host:5432/your-db
+SPRING_DATASOURCE_USERNAME=your-username
+SPRING_DATASOURCE_PASSWORD=your-password
+JWT_SECRET=your-very-long-secret-key-for-jwt-signing
+JWT_EXPIRATION=86400
+\`\`\`
+
+## 🧪 Testing the API
+
+### Using cURL
+
+1. **Test user registration:**
+   \`\`\`bash
+   curl -X POST https://book-review-wpkn.onrender.com/api/users/register \
+   -H "Content-Type: application/json" \
+   -d '{
+   "username": "testuser",
+   "email": "test@example.com",
+   "password": "testpass123"
+   }'
+   \`\`\`
+
+2. **Login with default admin user:**
+   \`\`\`bash
+   curl -X POST https://book-review-wpkn.onrender.com/api/users/login \
+   -H "Content-Type: application/json" \
+   -d '{"username": "admin_user", "password": "admin123"}'
+   \`\`\`
+
+3. **Access protected endpoint:**
+   \`\`\`bash
+   curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+   https://book-review-wpkn.onrender.com/api/users/profile
+   \`\`\`
+
+### Using Swagger UI
+
+Visit [https://book-review-wpkn.onrender.com/swagger-ui.html](https://book-review-wpkn.onrender.com/swagger-ui.html) to:
+- Test all endpoints interactively
+- View request/response schemas
+- Authenticate using JWT tokens
+- Explore the complete API documentation
 
 ## 🤝 Contributing
 

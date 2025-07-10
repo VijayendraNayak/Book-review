@@ -1,5 +1,5 @@
-# Multi-stage build
-FROM maven:3.8.4-openjdk-17-slim AS build
+# Use Maven image to build the application
+FROM maven:3.8.4-openjdk-17 AS build
 
 # Set working directory
 WORKDIR /app
@@ -8,22 +8,20 @@ WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
-# Copy source code
+# Copy source code and build the application
 COPY src ./src
-
-# Build the application
 RUN mvn clean package -DskipTests
 
-# Runtime stage
+# Use OpenJDK for runtime
 FROM openjdk:17-jdk-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy the built JAR from build stage
-COPY --from=build /app/target/*.jar app.jar
+# Copy the built JAR file from build stage
+COPY --from=build /app/target/book_review-*.jar app.jar
 
-# Expose port
+# Expose port 8080
 EXPOSE 8080
 
 # Add health check

@@ -1,5 +1,6 @@
 package com.example.book_review.services;
 
+import com.example.book_review.config.JwtUtil;
 import com.example.book_review.dto.*;
 import com.example.book_review.models.Roles;
 import com.example.book_review.models.User;
@@ -9,6 +10,11 @@ import jakarta.persistence.EntityNotFoundException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +27,8 @@ public class UserService {
     @Autowired private RoleRepository roleRepo;
     @Autowired private ModelMapper modelMapper;
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private JwtUtil jwtUtil;
+    @Autowired private AuthenticationManager authenticationManager;
 
     public UserResponseDTO register(UserRegistrationDTO dto) {
         if (userRepo.existsByUsername(dto.getUsername())) {
@@ -44,16 +52,26 @@ public class UserService {
         return mapToUserResponse(saved);
     }
 
-    public String login(UserLoginDTO dto) {
-        User user = userRepo.findByUsername(dto.getUsername())
-                .orElseThrow(() -> new EntityNotFoundException("Invalid username"));
+    public JwtResponseDTO login(UserLoginDTO dto) {
+        try {
+            // Authenticate the user
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(dto.getUsername(), dto.getPassword())
+            );
 
-        if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("Invalid password");
+            // Get user details
+            User user = userRepo.findByUsername(dto.getUsername())
+                    .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+            // Generate JWT token
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            String token = jwtUtil.generateToken(userDetails);
+
+            return new JwtResponseDTO(token, user.getUsername(), user.getEmail(), user.getRole().getName());
+
+        } catch (BadCredentialsException e) {
+            throw new IllegalArgumentException("Invalid username or password");
         }
-
-        // Return a simple token (in real app, use JWT)
-        return "token-for-" + user.getUsername();
     }
 
     public UserProfileDTO getUserProfile(String username) {
