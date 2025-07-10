@@ -1,46 +1,64 @@
 package com.example.book_review.controllers;
 
-import com.example.book_review.models.User;
-import com.example.book_review.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.List;
+import java.util.Arrays;
 
 @RestController
 @RequestMapping("/api/test")
 public class TestController {
 
-    @Autowired
-    private UserRepository userRepository;
-
     @GetMapping("/public")
     public ResponseEntity<Map<String, Object>> publicEndpoint() {
-        System.out.println("=== Public endpoint called successfully ===");
         Map<String, Object> response = new HashMap<>();
         response.put("message", "This is a public endpoint - no authentication required");
-        response.put("timestamp", String.valueOf(System.currentTimeMillis()));
+        response.put("timestamp", System.currentTimeMillis());
+        response.put("access", "PUBLIC");
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/test-summary")
+    public ResponseEntity<Map<String, Object>> getTestSummary() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("title", "Book Review API Security Testing Guide");
+
+        Map<String, Object> credentials = new HashMap<>();
+        credentials.put("admin", "admin_user:admin123");
+        credentials.put("author", "author_user:author123");
+        credentials.put("user", "regular_user:user123");
+        response.put("credentials", credentials);
+
+        Map<String, Object> hierarchy = new HashMap<>();
+        hierarchy.put("ADMIN", "Full system access - can manage users, roles, and all content");
+        hierarchy.put("AUTHOR", "Content management - can create/edit books, authors, genres");
+        hierarchy.put("USER", "Basic access - can read content and manage own reviews/ratings");
+        response.put("hierarchy", hierarchy);
+
+        Map<String, Object> testEndpoints = new HashMap<>();
+        testEndpoints.put("public", Arrays.asList("/api/test/public", "/api/test/test-summary"));
+        testEndpoints.put("admin_only", Arrays.asList("/api/test/admin", "/api/users", "/api/roles"));
+        testEndpoints.put("author_and_admin", Arrays.asList("/api/test/author", "POST /api/books", "POST /api/authors", "POST /api/genres"));
+        testEndpoints.put("all_authenticated", Arrays.asList("/api/test/user", "GET /api/books", "/api/reviews", "/api/ratings"));
+        response.put("testEndpoints", testEndpoints);
+
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/auth")
     public ResponseEntity<Map<String, Object>> authenticatedEndpoint() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
         Map<String, Object> response = new HashMap<>();
-        response.put("authenticated", auth.isAuthenticated());
-        response.put("message", "Authentication successful!");
-        response.put("authorities", auth.getAuthorities().toString());
+        response.put("message", "You are authenticated!");
         response.put("username", auth.getName());
-        response.put("timestamp", String.valueOf(System.currentTimeMillis()));
-
+        response.put("authorities", auth.getAuthorities());
+        response.put("access", "AUTHENTICATED");
         return ResponseEntity.ok(response);
     }
 
@@ -48,133 +66,116 @@ public class TestController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> adminEndpoint() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "Admin access granted!");
-        response.put("authorities", auth.getAuthorities().toString());
+        response.put("message", "Welcome Admin! You have full system access.");
         response.put("username", auth.getName());
-
+        response.put("role", "ADMIN");
+        response.put("permissions", Arrays.asList("Manage Users", "Manage Roles", "Full Content Access"));
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/author")
-    @PreAuthorize("hasRole('AUTHOR')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AUTHOR')")
     public ResponseEntity<Map<String, Object>> authorEndpoint() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "Author access granted!");
-        response.put("authorities", auth.getAuthorities().toString());
+        response.put("message", "Welcome! You have content management access.");
         response.put("username", auth.getName());
-
+        response.put("authorities", auth.getAuthorities());
+        response.put("permissions", Arrays.asList("Create Books", "Manage Authors", "Manage Genres"));
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/user")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AUTHOR') or hasRole('USER')")
     public ResponseEntity<Map<String, Object>> userEndpoint() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "User access granted!");
-        response.put("authorities", auth.getAuthorities().toString());
+        response.put("message", "Welcome! You have basic user access.");
         response.put("username", auth.getName());
-
+        response.put("authorities", auth.getAuthorities());
+        response.put("permissions", Arrays.asList("Read Books", "Write Reviews", "Rate Books"));
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/test-password")
-    public ResponseEntity<Map<String, Object>> testPasswords() {
-        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-        Map<String, Object> results = new HashMap<>();
-
-        List<User> users = userRepository.findAll();
-
-        for (User user : users) {
-            String rawPassword = "";
-            switch (user.getUsername()) {
-                case "admin_user":
-                    rawPassword = "admin123";
-                    break;
-                case "author_user":
-                    rawPassword = "author123";
-                    break;
-                case "regular_user":
-                    rawPassword = "user123";
-                    break;
-            }
-
-            boolean matches = encoder.matches(rawPassword, user.getPassword());
-            boolean isBCryptFormat = user.getPassword().startsWith("$2a$") ||
-                    user.getPassword().startsWith("$2b$") ||
-                    user.getPassword().startsWith("$2y$");
-
-            Map<String, Object> userResult = new HashMap<>();
-            userResult.put("username", user.getUsername());
-            userResult.put("password", rawPassword);
-            userResult.put("actualHashFromDB", user.getPassword());
-            userResult.put("matches", matches);
-            userResult.put("isBCryptFormat", isBCryptFormat);
-
-            results.put(user.getUsername(), userResult);
-        }
-
-        return ResponseEntity.ok(results);
+    @GetMapping("/hierarchy/admin-only")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> adminOnlyHierarchy() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("level", "ADMIN ONLY");
+        response.put("message", "This endpoint is restricted to ADMIN users only");
+        response.put("expectedUsers", Arrays.asList("admin_user"));
+        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/generate-passwords")
-    public ResponseEntity<Map<String, Object>> generatePasswords() {
-        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-        Map<String, Object> results = new HashMap<>();
-
-        Map<String, String> passwords = Map.of(
-                "admin_user", "admin123",
-                "author_user", "author123",
-                "regular_user", "user123"
-        );
-
-        for (Map.Entry<String, String> entry : passwords.entrySet()) {
-            String newHash = encoder.encode(entry.getValue());
-
-            Map<String, String> userResult = new HashMap<>();
-            userResult.put("password", entry.getValue());
-            userResult.put("newHash", newHash);
-
-            results.put(entry.getKey(), userResult);
-        }
-
-        results.put("note", "Use these hashes to update your database if the current ones don't work");
-
-        return ResponseEntity.ok(results);
+    @GetMapping("/hierarchy/author-and-above")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AUTHOR')")
+    public ResponseEntity<Map<String, Object>> authorAndAboveHierarchy() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("level", "AUTHOR AND ABOVE");
+        response.put("message", "This endpoint is accessible to ADMIN and AUTHOR users");
+        response.put("expectedUsers", Arrays.asList("admin_user", "author_user"));
+        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/debug-user/{username}")
-    public ResponseEntity<Map<String, Object>> debugUser(@PathVariable String username) {
-        System.out.println("=== Debug User Endpoint Called ===");
-        System.out.println("Looking for user: " + username);
+    @GetMapping("/hierarchy/user-and-above")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AUTHOR') or hasRole('USER')")
+    public ResponseEntity<Map<String, Object>> userAndAboveHierarchy() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("level", "USER AND ABOVE");
+        response.put("message", "This endpoint is accessible to all authenticated users");
+        response.put("expectedUsers", Arrays.asList("admin_user", "author_user", "regular_user"));
+        return ResponseEntity.ok(response);
+    }
 
-        try {
-            User user = userRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("User not found: " + username));
+    @PostMapping("/functionality/book-write")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AUTHOR')")
+    public ResponseEntity<Map<String, Object>> testBookWrite(@RequestBody(required = false) Map<String, Object> bookData) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Book write access confirmed!");
+        response.put("username", auth.getName());
+        response.put("authorities", auth.getAuthorities());
+        response.put("operation", "CREATE_BOOK");
+        response.put("receivedData", bookData);
+        return ResponseEntity.ok(response);
+    }
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("found", true);
-            response.put("username", user.getUsername());
-            response.put("email", user.getEmail());
-            response.put("roleId", user.getRole().getId());
-            response.put("roleName", user.getRole().getName());
-            response.put("passwordHash", user.getPassword().substring(0, 20) + "...");
-            response.put("fullPasswordHash", user.getPassword());
+    @GetMapping("/functionality/book-read")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AUTHOR') or hasRole('USER')")
+    public ResponseEntity<Map<String, Object>> testBookRead() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Book read access confirmed!");
+        response.put("username", auth.getName());
+        response.put("authorities", auth.getAuthorities());
+        response.put("operation", "READ_BOOKS");
+        return ResponseEntity.ok(response);
+    }
 
-            System.out.println("User found successfully: " + user.getUsername());
-            return ResponseEntity.ok(response);
+    @PostMapping("/functionality/review-access")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AUTHOR') or hasRole('USER')")
+    public ResponseEntity<Map<String, Object>> testReviewAccess(@RequestBody(required = false) Map<String, Object> reviewData) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Review access confirmed!");
+        response.put("username", auth.getName());
+        response.put("authorities", auth.getAuthorities());
+        response.put("operation", "MANAGE_REVIEWS");
+        response.put("receivedData", reviewData);
+        return ResponseEntity.ok(response);
+    }
 
-        } catch (Exception e) {
-            System.out.println("Error finding user: " + e.getMessage());
-            Map<String, Object> response = new HashMap<>();
-            response.put("found", false);
-            response.put("error", e.getMessage());
-            return ResponseEntity.ok(response);
-        }
+    @GetMapping("/functionality/admin-only")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> testAdminOnlyFunctionality() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "Admin-only functionality access confirmed!");
+        response.put("username", auth.getName());
+        response.put("authorities", auth.getAuthorities());
+        response.put("operation", "ADMIN_FUNCTIONS");
+        response.put("capabilities", Arrays.asList("User Management", "Role Management", "System Configuration"));
+        return ResponseEntity.ok(response);
     }
 }

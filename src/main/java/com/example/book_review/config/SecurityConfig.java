@@ -1,17 +1,18 @@
 package com.example.book_review.config;
 
-import com.example.book_review.services.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.config.Customizer;
 
 @Configuration
 @EnableWebSecurity
@@ -19,11 +20,16 @@ import org.springframework.security.config.Customizer;
 public class SecurityConfig {
 
     @Autowired
-    private CustomUserDetailsService customUserDetailsService;
+    private UserDetailsService customUserDetailsService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 
     @Bean
@@ -32,39 +38,43 @@ public class SecurityConfig {
 
         http
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(authz -> authz
                         // Public endpoints - no authentication required
-                        .requestMatchers("/api/test/public").permitAll()
-                        .requestMatchers("/api/test/test-password").permitAll()
-                        .requestMatchers("/api/test/generate-passwords").permitAll()
-                        .requestMatchers("/api/test/debug-user/**").permitAll()
+                        .requestMatchers("/api/test-endpoints/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/users/register", "/api/users/login").permitAll()
 
-                        // Swagger/OpenAPI endpoints
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
+                        // Read-only endpoints - public access
+                        .requestMatchers("GET", "/api/books/**").permitAll()
+                        .requestMatchers("GET", "/api/authors/**").permitAll()
+                        .requestMatchers("GET", "/api/genres/**").permitAll()
+                        .requestMatchers("GET", "/api/reviews/**").permitAll()
+                        .requestMatchers("GET", "/api/ratings/**").permitAll()
 
                         // Admin only endpoints
-                        .requestMatchers("/api/test/admin").hasRole("ADMIN")
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
                         .requestMatchers("/api/roles/**").hasRole("ADMIN")
+                        .requestMatchers("DELETE", "/api/**").hasRole("ADMIN")
 
-                        // Author endpoints
-                        .requestMatchers("/api/test/author").hasRole("AUTHOR")
-                        .requestMatchers("/api/books/**").hasAnyRole("ADMIN", "AUTHOR")
-                        .requestMatchers("/api/authors/**").hasAnyRole("ADMIN", "AUTHOR")
-                        .requestMatchers("/api/genres/**").hasAnyRole("ADMIN", "AUTHOR")
+                        // Author and Admin can create/update books, authors, genres
+                        .requestMatchers("POST", "/api/books/**").hasAnyRole("ADMIN", "AUTHOR")
+                        .requestMatchers("PUT", "/api/books/**").hasAnyRole("ADMIN", "AUTHOR")
+                        .requestMatchers("POST", "/api/authors/**").hasAnyRole("ADMIN", "AUTHOR")
+                        .requestMatchers("PUT", "/api/authors/**").hasAnyRole("ADMIN", "AUTHOR")
+                        .requestMatchers("POST", "/api/genres/**").hasAnyRole("ADMIN", "AUTHOR")
+                        .requestMatchers("PUT", "/api/genres/**").hasAnyRole("ADMIN", "AUTHOR")
 
-                        // User endpoints
-                        .requestMatchers("/api/test/user").hasRole("USER")
-                        .requestMatchers("/api/reviews/**").hasAnyRole("ADMIN", "AUTHOR", "USER")
-                        .requestMatchers("/api/ratings/**").hasAnyRole("ADMIN", "AUTHOR", "USER")
+                        // Authenticated users can create/update reviews and ratings
+                        .requestMatchers("POST", "/api/reviews/**").hasAnyRole("ADMIN", "AUTHOR", "USER")
+                        .requestMatchers("PUT", "/api/reviews/**").hasAnyRole("ADMIN", "AUTHOR", "USER")
+                        .requestMatchers("POST", "/api/ratings/**").hasAnyRole("ADMIN", "AUTHOR", "USER")
+                        .requestMatchers("PUT", "/api/ratings/**").hasAnyRole("ADMIN", "AUTHOR", "USER")
 
-                        // All other authenticated endpoints
-                        .requestMatchers("/api/test/auth").authenticated()
+                        // All other requests require authentication
                         .anyRequest().authenticated()
                 )
-                .httpBasic(Customizer.withDefaults())
-                .userDetailsService(customUserDetailsService);
+                .httpBasic(basic -> {});
 
         System.out.println("=== Security Configuration Complete ===");
         return http.build();

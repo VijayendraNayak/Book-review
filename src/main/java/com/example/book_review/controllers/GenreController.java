@@ -39,7 +39,7 @@ public class GenreController {
 
     @PostMapping
     @Operation(summary = "Create a new genre")
-    @PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMIN') or hasRole('AUTHOR')")
     public ResponseEntity<GenreResponseDTO> createGenre(@Valid @RequestBody GenreCreateUpdateDTO genreDTO) {
         GenreResponseDTO genre = genreService.createGenre(genreDTO);
         return new ResponseEntity<>(genre, HttpStatus.CREATED);
@@ -47,7 +47,7 @@ public class GenreController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update genre")
-    @PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMIN') or hasRole('AUTHOR')")
     public ResponseEntity<GenreResponseDTO> updateGenre(
             @PathVariable Long id,
             @Valid @RequestBody GenreCreateUpdateDTO genreDTO) {
@@ -57,7 +57,7 @@ public class GenreController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete genre")
-    @PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMIN') or hasRole('AUTHOR')")
     public ResponseEntity<Void> deleteGenre(@PathVariable Long id) {
         genreService.deleteGenre(id);
         return ResponseEntity.noContent().build();

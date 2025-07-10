@@ -39,7 +39,7 @@ public class AuthorController {
 
     @PostMapping
     @Operation(summary = "Create a new author")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AUTHOR')")
     public ResponseEntity<AuthorResponseDTO> createAuthor(@Valid @RequestBody AuthorCreateUpdateDTO authorDTO) {
         AuthorResponseDTO author = authorService.createAuthor(authorDTO);
         return new ResponseEntity<>(author, HttpStatus.CREATED);
@@ -47,7 +47,7 @@ public class AuthorController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Update author")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AUTHOR')")
     public ResponseEntity<AuthorResponseDTO> updateAuthor(
             @PathVariable Long id,
             @Valid @RequestBody AuthorCreateUpdateDTO authorDTO) {
@@ -57,7 +57,7 @@ public class AuthorController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete author")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AUTHOR')")
     public ResponseEntity<Void> deleteAuthor(@PathVariable Long id) {
         authorService.deleteAuthor(id);
         return ResponseEntity.noContent().build();
