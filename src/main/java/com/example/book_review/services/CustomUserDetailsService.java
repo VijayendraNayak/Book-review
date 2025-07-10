@@ -1,6 +1,6 @@
 package com.example.book_review.services;
 import com.example.book_review.models.User;
-import com.example.book_review.respository.UserRepository;
+import com.example.book_review.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

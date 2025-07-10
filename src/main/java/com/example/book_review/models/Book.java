@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -107,5 +108,15 @@ public class Book {
         for(Author author:new HashSet<>(authors)){
             removeAuthors(author);
         }
+    }
+
+    // Helper method to get author names as a comma-separated string
+    public String getAuthor() {
+        if (authors == null || authors.isEmpty()) {
+            return "Unknown Author";
+        }
+        return authors.stream()
+                .map(Author::getName)
+                .collect(Collectors.joining(", "));
     }
 }

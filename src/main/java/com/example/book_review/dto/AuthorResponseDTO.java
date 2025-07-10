@@ -1,7 +1,9 @@
 package com.example.book_review.dto;
 
-import java.util.List;
+import lombok.Data;
 
+import java.util.List;
+@Data
 // For responses
 public class AuthorResponseDTO {
     private int id;

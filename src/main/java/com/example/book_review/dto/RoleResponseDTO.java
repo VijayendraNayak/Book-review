@@ -14,7 +14,4 @@ public class RoleResponseDTO {
     private int id;
     private String name;
     private String description;
-    private LocalDateTime createdAt;
-    private List<UserSummaryDTO> users; // Rich user information
-    private int userCount;
 }
