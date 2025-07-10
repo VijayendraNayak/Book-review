@@ -17,11 +17,11 @@ public interface RatingRepository extends JpaRepository<Rating, Integer> {
     // Find rating by user and book
     Optional<Rating> findByUserAndBook(User user, Book book);
 
-    // Find ratings by book ordered by creation date (newest first)
-    Page<Rating> findByBookOrderByCreatedAtDesc(Book book, Pageable pageable);
+    // Find ratings by book ordered by creation date (newest first) - List for service compatibility
+    List<Rating> findByBookOrderByCreatedAtDesc(Book book);
 
-    // Find ratings by user ordered by creation date (newest first)
-    Page<Rating> findByUserOrderByCreatedAtDesc(User user, Pageable pageable);
+    // Find ratings by user ordered by creation date (newest first) - List for service compatibility
+    List<Rating> findByUserOrderByCreatedAtDesc(User user);
 
     // Calculate average rating for a book
     @Query("SELECT AVG(r.stars) FROM Rating r WHERE r.book = :book")

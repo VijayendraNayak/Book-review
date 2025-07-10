@@ -14,12 +14,15 @@ public interface ReviewRepository extends JpaRepository<Reviews,Integer> {
     // Check if user already reviewed a book
     boolean existsByUserAndBook(User user, Book book);
 
-    // Find reviews by book ordered by creation date (newest first)
-    Page<Reviews> findByBookOrderByCreatedAtDesc(Book book, Pageable pageable);
+    // Find reviews by book ordered by creation date (newest first) - List for service compatibility
+    List<Reviews> findByBookOrderByCreatedAtDesc(Book book);
 
-    // Find reviews by user ordered by creation date (newest first)
-    Page<Reviews> findByUserOrderByCreatedAtDesc(User user, Pageable pageable);
+    // Find reviews by user ordered by creation date (newest first) - List for service compatibility
+    List<Reviews> findByUserOrderByCreatedAtDesc(User user);
 
     // Find top 5 recent reviews for a book
     List<Reviews> findTop5ByBookOrderByCreatedAtDesc(Book book);
+
+    // Search reviews by comment containing text (case-insensitive)
+    List<Reviews> findByCommentContainingIgnoreCase(String query);
 }

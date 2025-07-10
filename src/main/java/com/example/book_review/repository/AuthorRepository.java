@@ -8,10 +8,5 @@ import java.util.List;
 
 @Repository
 public interface AuthorRepository extends JpaRepository<Author, Integer> {
-
-    // 🔍 Find by name (partial match, case-insensitive)
     List<Author> findByNameContainingIgnoreCase(String name);
-
-    // 🔍 Find by nationality (case-insensitive)
-    List<Author> findByNationalityIgnoreCase(String nationality);
 }

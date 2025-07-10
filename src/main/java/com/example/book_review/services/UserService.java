@@ -12,7 +12,6 @@ import org.springframework.data.domain.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -37,7 +36,6 @@ public class UserService {
         user.setEmail(dto.getEmail());
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
 
-        // ✅ Set default role: USER
         Roles defaultRole = roleRepo.findByName("ROLE_USER")
                 .orElseThrow(() -> new EntityNotFoundException("Default role not found"));
         user.setRole(defaultRole);
@@ -46,22 +44,66 @@ public class UserService {
         return mapToUserResponse(saved);
     }
 
-    public UserResponseDTO login(UserLoginDTO dto) {
+    public String login(UserLoginDTO dto) {
         User user = userRepo.findByUsername(dto.getUsername())
                 .orElseThrow(() -> new EntityNotFoundException("Invalid username"));
 
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Invalid password");
         }
-        userRepo.save(user); // update login time
 
+        // Return a simple token (in real app, use JWT)
+        return "token-for-" + user.getUsername();
+    }
+
+    public UserProfileDTO getUserProfile(String username) {
+        User user = userRepo.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        UserProfileDTO dto = new UserProfileDTO();
+        dto.setEmail(user.getEmail());
+        return dto;
+    }
+
+    public UserProfileDTO updateUserProfile(String username, UserProfileDTO profileDTO) {
+        User user = userRepo.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        user.setEmail(profileDTO.getEmail());
+        User updated = userRepo.save(user);
+
+        UserProfileDTO dto = new UserProfileDTO();
+        dto.setEmail(updated.getEmail());
+        return dto;
+    }
+
+    public Page<UserSummaryDTO> getAllUsers(Pageable pageable) {
+        Page<User> users = userRepo.findAll(pageable);
+        return users.map(user -> new UserSummaryDTO(user.getId(), user.getUsername()));
+    }
+
+    public UserResponseDTO getUserById(Long id) {
+        User user = userRepo.findById(id.intValue())
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
         return mapToUserResponse(user);
     }
 
-    // 🔍 PAGINATED USER LIST (admin use)
-    public Page<UserResponseDTO> getAllUsers(Pageable pageable) {
-        Page<User> users = userRepo.findAll(pageable);
-        return users.map(this::mapToUserResponse);
+    public void deleteUser(Long id) {
+        User user = userRepo.findById(id.intValue())
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        userRepo.delete(user);
+    }
+
+    public UserResponseDTO updateUserRoles(Long id, RoleCreateUpdateDTO roleDTO) {
+        User user = userRepo.findById(id.intValue())
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        Roles role = roleRepo.findByName(roleDTO.getName())
+                .orElseThrow(() -> new EntityNotFoundException("Role not found"));
+
+        user.setRole(role);
+        User updated = userRepo.save(user);
+        return mapToUserResponse(updated);
     }
 
     private UserResponseDTO mapToUserResponse(User user) {

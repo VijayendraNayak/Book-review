@@ -1,9 +1,6 @@
 package com.example.book_review.services;
 
-import com.example.book_review.dto.AuthorCreateUpdateDTO;
-import com.example.book_review.dto.AuthorResponseDTO;
-import com.example.book_review.dto.AuthorSummaryDTO;
-import com.example.book_review.dto.BookSummaryDTO;
+import com.example.book_review.dto.*;
 import com.example.book_review.models.Author;
 import com.example.book_review.models.Book;
 import com.example.book_review.repository.AuthorRepository;
@@ -16,7 +13,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,13 +34,11 @@ public class AuthorService {
         author.setBio(dto.getBio());
         author.setNationality(dto.getNationality());
 
-        // Link existing books if provided
         if (dto.getBookIds() != null && !dto.getBookIds().isEmpty()) {
             List<Book> books = bookRepository.findAllById(dto.getBookIds());
             if (books.size() != dto.getBookIds().size()) {
                 throw new EntityNotFoundException("One or more books not found");
             }
-
             for (Book book : books) {
                 author.addBooks(book);
             }
@@ -54,10 +48,10 @@ public class AuthorService {
         return mapToAuthorResponse(savedAuthor);
     }
 
-    // 🔍 GET ALL AUTHORS (with pagination)
-    public Page<AuthorResponseDTO> getAllAuthors(Pageable pageable) {
+    // 🔍 GET ALL AUTHORS (with pagination) - Return AuthorSummaryDTO as expected
+    public Page<AuthorSummaryDTO> getAllAuthors(Pageable pageable) {
         Page<Author> authors = authorRepository.findAll(pageable);
-        return authors.map(this::mapToAuthorResponse);
+        return authors.map(this::mapToAuthorSummary);
     }
 
     // 🔍 GET ALL AUTHORS (without pagination)
@@ -76,18 +70,18 @@ public class AuthorService {
                 .collect(Collectors.toList());
     }
 
-    // 🔍 GET AUTHOR BY ID
-    public AuthorResponseDTO getAuthorById(int id) {
-        Author author = authorRepository.findById(id)
+    // 🔍 GET AUTHOR BY ID - Changed to Long
+    public AuthorResponseDTO getAuthorById(Long id) {
+        Author author = authorRepository.findById(id.intValue())
                 .orElseThrow(() -> new EntityNotFoundException("Author not found with id: " + id));
         return mapToAuthorResponse(author);
     }
 
-    // 🔍 SEARCH AUTHORS BY NAME
-    public List<AuthorResponseDTO> searchAuthorsByName(String name) {
+    // 🔍 SEARCH AUTHORS BY NAME - Return List<AuthorSummaryDTO>
+    public List<AuthorSummaryDTO> searchAuthorsByName(String name) {
         List<Author> authors = authorRepository.findByNameContainingIgnoreCase(name);
         return authors.stream()
-                .map(this::mapToAuthorResponse)
+                .map(this::mapToAuthorSummary)
                 .collect(Collectors.toList());
     }
 
@@ -99,27 +93,39 @@ public class AuthorService {
                 .collect(Collectors.toList());
     }
 
-    // ✏️ UPDATE AUTHOR
-    public AuthorResponseDTO updateAuthor(int id, AuthorCreateUpdateDTO dto) {
-        Author existingAuthor = authorRepository.findById(id)
+    // 🔍 GET AUTHOR BOOKS - New method
+    public List<BookSummaryDTO> getAuthorBooks(Long id) {
+        Author author = authorRepository.findById(id.intValue())
+                .orElseThrow(() -> new EntityNotFoundException("Author not found"));
+        return author.getBooks().stream()
+                .map(book -> {
+                    BookSummaryDTO dto = new BookSummaryDTO();
+                    dto.setId(book.getId());
+                    dto.setTitle(book.getTitle());
+                    dto.setAuthor(book.getAuthor());
+                    dto.setPrice(book.getPrice());
+                    dto.setPublishedDate(book.getPublishedDate());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    // ✏️ UPDATE AUTHOR - Changed to Long
+    public AuthorResponseDTO updateAuthor(Long id, AuthorCreateUpdateDTO dto) {
+        Author existingAuthor = authorRepository.findById(id.intValue())
                 .orElseThrow(() -> new EntityNotFoundException("Author not found with id: " + id));
 
         existingAuthor.setName(dto.getName());
         existingAuthor.setBio(dto.getBio());
         existingAuthor.setNationality(dto.getNationality());
 
-        // Update book associations if provided
         if (dto.getBookIds() != null) {
-            // Clear existing books
             existingAuthor.clearBooks();
-
-            // Add new books
             if (!dto.getBookIds().isEmpty()) {
                 List<Book> books = bookRepository.findAllById(dto.getBookIds());
                 if (books.size() != dto.getBookIds().size()) {
                     throw new EntityNotFoundException("One or more books not found");
                 }
-
                 for (Book book : books) {
                     existingAuthor.addBooks(book);
                 }
@@ -156,14 +162,12 @@ public class AuthorService {
         return mapToAuthorResponse(savedAuthor);
     }
 
-    // 🗑️ DELETE AUTHOR
-    public void deleteAuthor(int id) {
-        Author author = authorRepository.findById(id)
+    // 🗑️ DELETE AUTHOR - Changed to Long
+    public void deleteAuthor(Long id) {
+        Author author = authorRepository.findById(id.intValue())
                 .orElseThrow(() -> new EntityNotFoundException("Author not found with id: " + id));
 
-        // Clear all book associations before deletion
         author.clearBooks();
-
         authorRepository.delete(author);
     }
 
@@ -195,13 +199,14 @@ public class AuthorService {
         dto.setBio(author.getBio());
         dto.setNationality(author.getNationality());
 
-        // Map books to BookSummaryDTO with proper constructor
         List<BookSummaryDTO> bookSummaries = author.getBooks().stream()
-                .map(book -> new BookSummaryDTO(
-                        book.getId(),
-                        book.getTitle(),
-                        book.getAuthor() // Use the helper method
-                ))
+                .map(book -> {
+                    BookSummaryDTO bookDto = new BookSummaryDTO();
+                    bookDto.setId(book.getId());
+                    bookDto.setTitle(book.getTitle());
+                    bookDto.setAuthor(book.getAuthor());
+                    return bookDto;
+                })
                 .collect(Collectors.toList());
 
         dto.setBooks(bookSummaries);

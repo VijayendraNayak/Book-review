@@ -12,8 +12,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -35,8 +33,18 @@ public class RatingService {
     @Autowired
     private ModelMapper modelMapper;
 
-    public RatingResponseDTO createOrUpdateRating(RatingCreateUpdateDTO dto) {
-        String username = getCurrentUsername();
+    public Page<RatingSummaryDTO> getAllRatings(Pageable pageable) {
+        Page<Rating> ratings = ratingRepo.findAll(pageable);
+        return ratings.map(this::mapToRatingSummary);
+    }
+
+    public RatingResponseDTO getRatingById(Long id) {
+        Rating rating = ratingRepo.findById(id.intValue())
+                .orElseThrow(() -> new EntityNotFoundException("Rating not found"));
+        return mapToRatingResponse(rating);
+    }
+
+    public RatingResponseDTO createRating(RatingCreateUpdateDTO dto, String username) {
         User user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
@@ -48,11 +56,9 @@ public class RatingService {
 
         Rating rating;
         if (existingRating.isPresent()) {
-            // Update existing rating
             rating = existingRating.get();
             rating.setStars(dto.getStars());
         } else {
-            // Create new rating
             rating = new Rating();
             rating.setStars(dto.getStars());
             rating.setUser(user);
@@ -63,82 +69,75 @@ public class RatingService {
         return mapToRatingResponse(saved);
     }
 
-    public void deleteRating(int ratingId) {
-        String username = getCurrentUsername();
-
-        Rating rating = ratingRepo.findById(ratingId)
+    public RatingResponseDTO updateRating(Long id, RatingCreateUpdateDTO dto, String username) {
+        Rating rating = ratingRepo.findById(id.intValue())
                 .orElseThrow(() -> new EntityNotFoundException("Rating not found"));
 
-        // Check if current user owns this rating or is admin
-        if (!rating.getUser().getUsername().equals(username) && !isCurrentUserAdmin()) {
+        if (!rating.getUser().getUsername().equals(username)) {
+            throw new IllegalArgumentException("You can only update your own ratings");
+        }
+
+        rating.setStars(dto.getStars());
+        Rating updated = ratingRepo.save(rating);
+        return mapToRatingResponse(updated);
+    }
+
+    public void deleteRating(Long id, String username) {
+        Rating rating = ratingRepo.findById(id.intValue())
+                .orElseThrow(() -> new EntityNotFoundException("Rating not found"));
+
+        if (!rating.getUser().getUsername().equals(username)) {
             throw new IllegalArgumentException("You can only delete your own ratings");
         }
 
         ratingRepo.delete(rating);
     }
 
-    public RatingResponseDTO getRatingById(int ratingId) {
-        Rating rating = ratingRepo.findById(ratingId)
-                .orElseThrow(() -> new EntityNotFoundException("Rating not found"));
-        return mapToRatingResponse(rating);
-    }
-
-    public Optional<RatingResponseDTO> getUserRatingForBook(int bookId) {
-        String username = getCurrentUsername();
-        User user = userRepo.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-
-        Book book = bookRepo.findById(bookId)
+    public List<RatingSummaryDTO> getRatingsByBook(Long bookId) {
+        Book book = bookRepo.findById(bookId.intValue())
                 .orElseThrow(() -> new EntityNotFoundException("Book not found"));
 
-        return ratingRepo.findByUserAndBook(user, book)
-                .map(this::mapToRatingResponse);
+        return ratingRepo.findByBookOrderByCreatedAtDesc(book).stream()
+                .map(this::mapToRatingSummary)
+                .collect(Collectors.toList());
     }
 
-    public Page<RatingResponseDTO> getAllRatings(Pageable pageable) {
-        Page<Rating> ratings = ratingRepo.findAll(pageable);
-        return ratings.map(this::mapToRatingResponse);
-    }
-
-    public Page<RatingResponseDTO> getRatingsByBook(int bookId, Pageable pageable) {
-        Book book = bookRepo.findById(bookId)
-                .orElseThrow(() -> new EntityNotFoundException("Book not found"));
-
-        Page<Rating> ratings = ratingRepo.findByBookOrderByCreatedAtDesc(book, pageable);
-        return ratings.map(this::mapToRatingResponse);
-    }
-
-    public Page<RatingResponseDTO> getRatingsByUser(String username, Pageable pageable) {
-        User user = userRepo.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-
-        Page<Rating> ratings = ratingRepo.findByUserOrderByCreatedAtDesc(user, pageable);
-        return ratings.map(this::mapToRatingResponse);
-    }
-
-    public Double getAverageRatingForBook(int bookId) {
-        Book book = bookRepo.findById(bookId)
+    public Double getAverageRatingForBook(Long bookId) {
+        Book book = bookRepo.findById(bookId.intValue())
                 .orElseThrow(() -> new EntityNotFoundException("Book not found"));
 
         return ratingRepo.findAverageRatingByBook(book);
     }
 
-    public Long getRatingCountForBook(int bookId) {
-        Book book = bookRepo.findById(bookId)
-                .orElseThrow(() -> new EntityNotFoundException("Book not found"));
+    public List<RatingSummaryDTO> getRatingsByUser(Long userId) {
+        User user = userRepo.findById(userId.intValue())
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        return ratingRepo.countByBook(book);
-    }
-
-    public List<RatingSummaryDTO> getRecentRatingsByBook(int bookId, int limit) {
-        Book book = bookRepo.findById(bookId)
-                .orElseThrow(() -> new EntityNotFoundException("Book not found"));
-
-        List<Rating> ratings = ratingRepo.findTop10ByBookOrderByCreatedAtDesc(book);
-        return ratings.stream()
-                .limit(limit)
+        return ratingRepo.findByUserOrderByCreatedAtDesc(user).stream()
                 .map(this::mapToRatingSummary)
                 .collect(Collectors.toList());
+    }
+
+    public List<RatingSummaryDTO> getRatingsByUsername(String username) {
+        User user = userRepo.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        return ratingRepo.findByUserOrderByCreatedAtDesc(user).stream()
+                .map(this::mapToRatingSummary)
+                .collect(Collectors.toList());
+    }
+
+    public RatingResponseDTO getUserRatingForBook(Long bookId, String username) {
+        User user = userRepo.findByUsername(username)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        Book book = bookRepo.findById(bookId.intValue())
+                .orElseThrow(() -> new EntityNotFoundException("Book not found"));
+
+        Rating rating = ratingRepo.findByUserAndBook(user, book)
+                .orElseThrow(() -> new EntityNotFoundException("Rating not found"));
+
+        return mapToRatingResponse(rating);
     }
 
     private RatingResponseDTO mapToRatingResponse(Rating rating) {
@@ -150,11 +149,10 @@ public class RatingService {
         );
         dto.setUser(userDTO);
 
-        BookSummaryDTO bookDTO = new BookSummaryDTO(
-                rating.getBook().getId(),
-                rating.getBook().getTitle(),
-                rating.getBook().getAuthor()
-        );
+        BookSummaryDTO bookDTO = new BookSummaryDTO();
+        bookDTO.setId(rating.getBook().getId());
+        bookDTO.setTitle(rating.getBook().getTitle());
+        bookDTO.setAuthor(rating.getBook().getAuthor());
         dto.setBook(bookDTO);
 
         return dto;
@@ -167,16 +165,5 @@ public class RatingService {
         dto.setCreatedAt(rating.getCreatedAt());
         dto.setUsername(rating.getUser().getUsername());
         return dto;
-    }
-
-    private String getCurrentUsername() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return auth.getName();
-    }
-
-    private boolean isCurrentUserAdmin() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        return auth.getAuthorities().stream()
-                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
     }
 }

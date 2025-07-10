@@ -21,8 +21,8 @@ public interface GenreRepository extends JpaRepository<Genre,Integer> {
     // Find all genres ordered by name
     List<Genre> findAllByOrderByNameAsc();
 
-    // Search genres by name containing text
-    Page<Genre> findByNameContainingIgnoreCaseOrderByName(String name, Pageable pageable);
+    // Search genres by name containing text - returns List for service compatibility
+    List<Genre> findByNameContainingIgnoreCaseOrderByName(String name);
 
     // Find genres ordered by book count (most popular first)
     @Query("SELECT g FROM Genre g LEFT JOIN g.books b GROUP BY g ORDER BY COUNT(b) DESC")
