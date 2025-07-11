@@ -44,11 +44,23 @@ public class UserService {
         user.setEmail(dto.getEmail());
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
 
-        Roles defaultRole = roleRepo.findByName("ROLE_USER")
-                .orElseThrow(() -> new EntityNotFoundException("Default role not found"));
-        user.setRole(defaultRole);
-        User saved = userRepo.save(user);
+        // Handle role assignment - default to USER if not specified or invalid
+        String requestedRole = dto.getRole();
+        final String finalRoleName;
 
+        if (requestedRole == null || requestedRole.trim().isEmpty()) {
+            finalRoleName = "USER";
+        } else if (requestedRole.equals("USER") || requestedRole.equals("AUTHOR") || requestedRole.equals("ADMIN")) {
+            finalRoleName = requestedRole;
+        } else {
+            finalRoleName = "USER"; // Default to USER for invalid roles
+        }
+
+        Roles role = roleRepo.findByName(finalRoleName)
+                .orElseThrow(() -> new EntityNotFoundException("Role not found: " + finalRoleName));
+        user.setRole(role);
+
+        User saved = userRepo.save(user);
         return mapToUserResponse(saved);
     }
 

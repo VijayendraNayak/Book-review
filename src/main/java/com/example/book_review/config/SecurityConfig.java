@@ -46,20 +46,26 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         // Public endpoints - no authentication required
                         .requestMatchers("/api/test-endpoints/**").permitAll()
+                        .requestMatchers("/test/**").permitAll()
 
-                        // Swagger UI endpoints - make completely public
+                        // Swagger UI endpoints - completely public for documentation access
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/swagger-ui.html").permitAll()
                         .requestMatchers("/swagger-resources/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/v3/api-docs.yaml").permitAll()
                         .requestMatchers("/v3/api-docs").permitAll()
+                        .requestMatchers("/api-docs/**").permitAll()
                         .requestMatchers("/webjars/**").permitAll()
 
-                        // Authentication endpoints
-                        .requestMatchers("/api/users/register", "/api/users/login").permitAll()
+                        // Authentication endpoints - must be public
+                        .requestMatchers("/api/users/register").permitAll()
+                        .requestMatchers("/api/users/login").permitAll()
 
-                        // Read-only endpoints - public access
+                        // Health check endpoints
+                        .requestMatchers("/actuator/health").permitAll()
+
+                        // Read-only endpoints - public access for browsing
                         .requestMatchers("GET", "/api/books/**").permitAll()
                         .requestMatchers("GET", "/api/authors/**").permitAll()
                         .requestMatchers("GET", "/api/genres/**").permitAll()

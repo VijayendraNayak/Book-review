@@ -27,7 +27,6 @@ A comprehensive RESTful API for managing books, authors, reviews, and ratings bu
 - **Author Management**: Manage author information and their books
 - **Genre Classification**: Organize books by genres
 - **RESTful API**: Well-structured REST endpoints with proper HTTP status codes
-- **API Documentation**: Interactive Swagger UI documentation
 - **JWT Security**: Stateless authentication with JSON Web Tokens
 - **Database Integration**: PostgreSQL with JPA/Hibernate
 - **Docker Support**: Containerized deployment with multi-stage builds
@@ -40,7 +39,6 @@ A comprehensive RESTful API for managing books, authors, reviews, and ratings bu
 - **Authentication**: JWT (JSON Web Tokens)
 - **ORM**: Spring Data JPA / Hibernate
 - **Security**: Spring Security
-- **Documentation**: SpringDoc OpenAPI (Swagger)
 - **Build Tool**: Maven
 - **Java Version**: 17
 - **Containerization**: Docker
@@ -65,8 +63,6 @@ View the complete Entity Relationship Diagram here:
 
 The API is deployed and accessible at:
 - **Base URL**: `https://book-review-wpkn.onrender.com`
-- **Swagger UI**: [https://book-review-wpkn.onrender.com/swagger-ui.html](https://book-review-wpkn.onrender.com/swagger-ui.html)
-- **API Docs**: [https://book-review-wpkn.onrender.com/api-docs](https://book-review-wpkn.onrender.com/api-docs)
 
 ## 🚀 Getting Started
 
@@ -106,16 +102,8 @@ The API is deployed and accessible at:
 
 4. **Access the Application**
    - API Base URL: `http://localhost:8080`
-   - Swagger UI: `http://localhost:8080/swagger-ui.html`
-   - API Docs: `http://localhost:8080/api-docs`
 
 ## 📚 API Documentation
-
-### Swagger UI (wait for 20-30s for render's cold start)
-Interactive API documentation is available at:
-- **Production**: [https://book-review-wpkn.onrender.com/swagger-ui.html](https://book-review-wpkn.onrender.com/swagger-ui.html)
-- **Local**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
-- **OpenAPI JSON**: [https://book-review-wpkn.onrender.com/api-docs](https://book-review-wpkn.onrender.com/api-docs)
 
 ### Postman Collection
 Test the API endpoints directly using our Postman collection:
@@ -126,12 +114,6 @@ The Postman collection includes:
 - Environment variables for easy switching between local and production
 - Authentication examples with JWT tokens
 - Sample request bodies and expected responses
-
-The Swagger interface provides:
-- Complete API endpoint documentation
-- Request/response schemas
-- Interactive testing capabilities
-- JWT authentication examples
 
 ## 🔐 User Roles & Authentication
 
@@ -399,7 +381,7 @@ curl -X POST https://book-review-wpkn.onrender.com/api/books \
 
 ```
 src/main/java/com/example/book_review/
-├── config/          # Configuration classes (Security, JWT, Swagger)
+├── config/          # Configuration classes (Security, JWT)
 ├── controllers/     # REST controllers
 ├── dto/            # Data Transfer Objects
 ├── models/         # JPA entities
@@ -424,10 +406,6 @@ spring.jpa.show-sql=true
 # JWT Configuration
 jwt.secret=mySecretKeyForJWTTokenGenerationThatShouldBeLongEnoughForSecurity
 jwt.expiration=86400
-
-# Swagger Configuration
-springdoc.swagger-ui.path=/swagger-ui.html
-springdoc.api-docs.path=/api-docs
 
 # Logging
 logging.level.com.example.book_review=DEBUG
@@ -550,14 +528,6 @@ JWT_EXPIRATION=86400
    curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
    https://book-review-wpkn.onrender.com/api/users/profile
    ```
-
-### Using Swagger UI (wait for 20-30s because of render's cold start)
-
-Visit [https://book-review-wpkn.onrender.com/swagger-ui.html](https://book-review-wpkn.onrender.com/swagger-ui.html) to:
-- Test all endpoints interactively
-- View request/response schemas
-- Authenticate using JWT tokens
-- Explore the complete API documentation
 
 ## 🤝 Contributing
 
