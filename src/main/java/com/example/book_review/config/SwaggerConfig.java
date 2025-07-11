@@ -22,11 +22,13 @@ public class SwaggerConfig {
                         .contact(new Contact()
                                 .name("Book Review Team")
                                 .email("support@bookreview.com")))
-                .addSecurityItem(new SecurityRequirement().addList("basicAuth"))
+                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components()
-                        .addSecuritySchemes("basicAuth",
+                        .addSecuritySchemes("bearerAuth",
                                 new SecurityScheme()
+                                        .name("Authorization")
                                         .type(SecurityScheme.Type.HTTP)
-                                        .scheme("basic")));
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")));
     }
 }

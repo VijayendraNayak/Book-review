@@ -104,7 +104,7 @@ The API is deployed and accessible at:
 
 ## 📚 API Documentation
 
-### Swagger UI
+### Swagger UI(wait for 20-30s for render's cold start)
 Interactive API documentation is available at:
 - **Production**: [https://book-review-wpkn.onrender.com/swagger-ui.html](https://book-review-wpkn.onrender.com/swagger-ui.html)
 - **Local**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
@@ -375,7 +375,7 @@ JWT_EXPIRATION=86400
    https://book-review-wpkn.onrender.com/api/users/profile
    \`\`\`
 
-### Using Swagger UI
+### Using Swagger UI(wait for 20-30s beacuse of render's cold start)
 
 Visit [https://book-review-wpkn.onrender.com/swagger-ui.html](https://book-review-wpkn.onrender.com/swagger-ui.html) to:
 - Test all endpoints interactively
@@ -391,16 +391,6 @@ Visit [https://book-review-wpkn.onrender.com/swagger-ui.html](https://book-revie
 4. Push to the branch (\`git push origin feature/amazing-feature\`)
 5. Open a Pull Request
 
-## 📝 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 📞 Support
-
-For support and questions:
-- Create an issue in the repository
-- Contact: support@bookreview.com
-
----
 
 **Happy Reading! 📚**
