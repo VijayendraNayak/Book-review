@@ -71,9 +71,9 @@ public class SecurityConfig {
                         .requestMatchers("GET", "/api/genres/**").permitAll()
                         .requestMatchers("GET", "/api/reviews/**").permitAll()
                         .requestMatchers("GET", "/api/ratings/**").permitAll()
-                        .requestMatchers("/api/users/**").permitAll()
 
                         // Admin only endpoints
+                        .requestMatchers("/api/users/**").hasRole("ADMIN")
                         .requestMatchers("/api/roles/**").hasRole("ADMIN")
                         .requestMatchers("DELETE", "/api/**").hasRole("ADMIN")
 
